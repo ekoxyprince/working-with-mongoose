@@ -8,7 +8,13 @@ if(!req.session.isLoggedIn){
 User
 .findById(req.session.user._id)
 .then(user=>{
+    if(!user){
+        return next()
+    }
     req.user = user
     next()
+})
+.catch(error=>{
+    throw new Error(error)
 })
 }

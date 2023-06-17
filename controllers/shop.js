@@ -1,5 +1,8 @@
 const Product = require('../models/product');
 const Order = require('../models/order');
+const fs = require('fs')
+const path = require('path')
+const pdfDocument = require('pdfkit')
 
 exports.getProducts = (req, res, next) => {
   Product.find()
@@ -119,3 +122,29 @@ exports.getOrders = (req, res, next) => {
     })
     .catch(err => console.log(err));
 };
+
+
+exports.getInvoice = (req,res,next)=>{
+  const {orderId} = req.params
+  const orderName = `invoice-${orderId}.pdf`
+  const invoicePath = path.join('public','static',orderName)
+  // fs.readFile(invoicePath,(err,data)=>{
+  //   if(!err){
+  //     res.header('Content-Type','application/pdf')
+  //     res.header('Content-Disposition','attachment; filename="invoice.pdf"')
+  //     res.send(data)
+  //   }
+  // })
+  // const file = fs.createReadStream(invoicePath)
+  // file.pipe(res)
+  const pdfDoc = new pdfDocument()
+  res.setHeader('Content-Type','application/pdf')
+  res.setHeader('Content-Disposition','attachment; filename="'+orderName+'"')
+  pdfDoc.pipe(fs.createWriteStream(invoicePath))
+  pdfDoc.pipe(res)
+  pdfDoc.fontSize(26).text("Order Invoice Summary",{
+    underline:true
+  })
+  pdfDoc.fontSize(12).text('This is your invoice summary')
+  pdfDoc.end()
+}

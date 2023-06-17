@@ -1,4 +1,6 @@
+const mongoose = require('mongoose');
 const Product = require('../models/product');
+const fs = require('fs')
 
 exports.getAddProduct = (req, res, next) => {
   res.render('admin/edit-product', {
@@ -11,9 +13,13 @@ exports.getAddProduct = (req, res, next) => {
 
 exports.postAddProduct = (req, res, next) => {
   const title = req.body.title;
-  const imageUrl = req.body.imageUrl;
+  const image = req.file;
   const price = req.body.price;
   const description = req.body.description;
+  if(!image){
+    throw new Error("Invalid Image")
+  }
+  const imageUrl = (image.destination+image.filename).slice(6)
   const product = new Product({
     title: title,
     price: price,
@@ -29,7 +35,18 @@ exports.postAddProduct = (req, res, next) => {
       res.redirect('/admin/products');
     })
     .catch(err => {
-      console.log(err);
+      // res.status(500)
+      // // .render('admin/edit-product', {
+      // //   pageTitle: 'Add Product',
+      // //   path: '/admin/add-product',
+      // //   editing: false,
+      // //   isAuthenticated: req.session.isLoggedIn,
+      // //   errorMessage:'Database Operation Failed Contact Administrator'
+      // // });
+      // .redirect('/500')
+      const error = new Error(err)
+      error.httpStatusCode = 500
+      return next(error)
     });
 };
 
@@ -52,16 +69,20 @@ exports.getEditProduct = (req, res, next) => {
         isAuthenticated: req.session.isLoggedIn
       });
     })
-    .catch(err => console.log(err));
+    .catch(err => {
+      const error = new Error(err)
+      error.httpStatusCode = 500
+      return next(error)
+    });
 };
 
 exports.postEditProduct = (req, res, next) => {
   const prodId = req.body.productId;
   const updatedTitle = req.body.title;
   const updatedPrice = req.body.price;
-  const updatedImageUrl = req.body.imageUrl;
+  const image = req.file
+  const updatedImageUrl = image&&(image.destination+image.filename).slice(6)
   const updatedDesc = req.body.description;
-
   Product.findById(prodId)
     .then(product => {
       if(product.userId.toString() !== req.user._id.toString()){
@@ -70,7 +91,10 @@ exports.postEditProduct = (req, res, next) => {
       product.title = updatedTitle;
       product.price = updatedPrice;
       product.description = updatedDesc;
-      product.imageUrl = updatedImageUrl;
+      if(image){
+        fs.unlinkSync('./public'+product.imageUrl);
+        product.imageUrl = updatedImageUrl?updatedImageUrl:product.imageUrl
+      }
       return product
       .save()
       .then(result => {
@@ -78,7 +102,12 @@ exports.postEditProduct = (req, res, next) => {
         res.redirect('/admin/products');
       })
     })
-    .catch(err => console.log(err));
+    .catch(err =>{
+      // const error = new Error(err)
+      // error.httpStatusCode = 500
+      // return next(error)
+      console.log(err)
+    });
 };
 
 exports.getProducts = (req, res, next) => {
@@ -94,7 +123,11 @@ exports.getProducts = (req, res, next) => {
         isAuthenticated: req.session.isLoggedIn
       });
     })
-    .catch(err => console.log(err));
+    .catch(err => {
+      const error = new Error(err)
+      error.httpStatusCode = 500
+      return next(error)
+    });
 };
 
 exports.postDeleteProduct = (req, res, next) => {
@@ -104,5 +137,9 @@ exports.postDeleteProduct = (req, res, next) => {
       console.log('DESTROYED PRODUCT');
       res.redirect('/admin/products');
     })
-    .catch(err => console.log(err));
+    .catch(err => {
+      const error = new Error(err)
+      error.httpStatusCode = 500
+      return next(error)
+    });
 };
