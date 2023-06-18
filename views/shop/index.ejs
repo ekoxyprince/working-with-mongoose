@@ -30,6 +30,12 @@
                     </article>
                 <% } %>
             </div>
+            <section class="pagination">
+                <% for(let num = 1; num<=count; num++) { %>
+                    <a class="<%= num==page?'active':'' %>" href="/?page=<%= num %>"><%= num %></a>
+                <% } %>
+              <% if(page<count){ %> <a href="/?page=<%= Math.floor(page) + 1 %>">Next</a><% } %>
+               </section >
         <% } else { %>
             <h1>No Products Found!</h1>
         <% } %>
